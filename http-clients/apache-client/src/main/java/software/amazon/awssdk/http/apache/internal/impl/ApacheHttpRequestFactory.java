@@ -55,7 +55,6 @@ public class ApacheHttpRequestFactory {
         HttpRequestBase base = createApacheRequest(request, sanitizeUri(request.httpRequest()));
         addHeadersToRequest(base, request.httpRequest());
         addRequestConfig(base, request.httpRequest(), requestConfig);
-
         return base;
     }
 
@@ -172,7 +171,7 @@ public class ApacheHttpRequestFactory {
             // it's already present, so we skip it here. We also skip the Host
             // header to avoid sending it twice, which will interfere with some
             // signing schemes.
-            if (!IGNORE_HEADERS.contains(name)) {
+            if (IGNORE_HEADERS.stream().noneMatch(name::equalsIgnoreCase)) {
                 for (String headerValue : value) {
                     httpRequest.addHeader(name, headerValue);
                 }
@@ -181,6 +180,12 @@ public class ApacheHttpRequestFactory {
     }
 
     private String getHostHeaderValue(SdkHttpRequest request) {
+        // Respect any user-specified Host header when present
+        // .get is case-insensitive here since headers uses an ordered map with case-insensitive ordering
+        List<String> hostHeaderVals = request.headers().get(HttpHeaders.HOST);
+        if (hostHeaderVals != null && !hostHeaderVals.isEmpty()) {
+            return hostHeaderVals.get(0);
+        }
         // Apache doesn't allow us to include the port in the host header if it's a standard port for that protocol. For that
         // reason, we don't include the port when we sign the message. See {@link SdkHttpRequest#port()}.
         return !SdkHttpUtils.isUsingStandardPort(request.protocol(), request.port())

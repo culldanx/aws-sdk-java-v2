@@ -87,13 +87,20 @@ public final class RequestAdapter {
         // Copy over any other headers already in our request
         request.forEachHeader((name, value) -> {
             // Skip the Host header to avoid sending it twice, which will interfere with some signing schemes.
-            if (!IGNORE_HEADERS.contains(name)) {
+            if (IGNORE_HEADERS.stream().noneMatch(name::equalsIgnoreCase)) {
                 value.forEach(h -> httpRequest.headers().add(name, h));
             }
         });
     }
 
     private String getHostHeaderValue(SdkHttpRequest request) {
+        // Respect any user-specified Host header when present
+        // .get is case-insensitive here since headers uses an ordered map with case-insensitive ordering
+        List<String> hostHeaderVals = request.headers().get(HOST);
+        if (hostHeaderVals != null && !hostHeaderVals.isEmpty()) {
+            return hostHeaderVals.get(0);
+        }
+
         return SdkHttpUtils.isUsingStandardPort(request.protocol(), request.port())
                 ? request.host()
                 : request.host() + ":" + request.port();
