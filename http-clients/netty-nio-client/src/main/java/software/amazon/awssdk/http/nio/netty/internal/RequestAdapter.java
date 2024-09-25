@@ -94,6 +94,12 @@ public final class RequestAdapter {
     }
 
     private String getHostHeaderValue(SdkHttpRequest request) {
+        // Respect any user-specified Host header when present
+        List<String> hostHeaderVals = request.headers().get(HOST);
+        if (hostHeaderVals != null && !hostHeaderVals.isEmpty()) {
+            return hostHeaderVals.get(0);
+        }
+
         return SdkHttpUtils.isUsingStandardPort(request.protocol(), request.port())
                 ? request.host()
                 : request.host() + ":" + request.port();

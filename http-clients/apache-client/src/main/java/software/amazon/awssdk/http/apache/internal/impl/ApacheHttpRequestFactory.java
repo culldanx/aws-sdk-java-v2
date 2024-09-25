@@ -181,6 +181,11 @@ public class ApacheHttpRequestFactory {
     }
 
     private String getHostHeaderValue(SdkHttpRequest request) {
+        // Respect any user-specified Host header when present
+        List<String> hostHeaderVals = request.headers().get(HttpHeaders.HOST);
+        if (hostHeaderVals != null && !hostHeaderVals.isEmpty()) {
+            return hostHeaderVals.get(0);
+        }
         // Apache doesn't allow us to include the port in the host header if it's a standard port for that protocol. For that
         // reason, we don't include the port when we sign the message. See {@link SdkHttpRequest#port()}.
         return !SdkHttpUtils.isUsingStandardPort(request.protocol(), request.port())
