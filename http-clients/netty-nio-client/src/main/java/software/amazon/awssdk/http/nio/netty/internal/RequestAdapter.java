@@ -24,6 +24,7 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http2.HttpConversionUtil.ExtensionHeaderNames;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import software.amazon.awssdk.annotations.SdkInternalApi;
 import software.amazon.awssdk.http.Protocol;
 import software.amazon.awssdk.http.SdkHttpMethod;
@@ -95,10 +96,9 @@ public final class RequestAdapter {
 
     private String getHostHeaderValue(SdkHttpRequest request) {
         // Respect any user-specified Host header when present
-        // .get is case-insensitive here since headers uses an ordered map with case-insensitive ordering
-        List<String> hostHeaderVals = request.headers().get(HOST);
-        if (hostHeaderVals != null && !hostHeaderVals.isEmpty()) {
-            return hostHeaderVals.get(0);
+        Optional<String> existingHostHeader = request.firstMatchingHeader(HOST);
+        if (existingHostHeader.isPresent()) {
+            return existingHostHeader.get();
         }
 
         return SdkHttpUtils.isUsingStandardPort(request.protocol(), request.port())

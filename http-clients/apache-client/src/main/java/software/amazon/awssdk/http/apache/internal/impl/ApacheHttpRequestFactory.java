@@ -20,6 +20,7 @@ import static software.amazon.awssdk.utils.NumericUtils.saturatedCast;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.config.RequestConfig;
@@ -181,10 +182,9 @@ public class ApacheHttpRequestFactory {
 
     private String getHostHeaderValue(SdkHttpRequest request) {
         // Respect any user-specified Host header when present
-        // .get is case-insensitive here since headers uses an ordered map with case-insensitive ordering
-        List<String> hostHeaderVals = request.headers().get(HttpHeaders.HOST);
-        if (hostHeaderVals != null && !hostHeaderVals.isEmpty()) {
-            return hostHeaderVals.get(0);
+        Optional<String> existingHostHeader = request.firstMatchingHeader(HttpHeaders.HOST);
+        if (existingHostHeader.isPresent()) {
+            return existingHostHeader.get();
         }
         // Apache doesn't allow us to include the port in the host header if it's a standard port for that protocol. For that
         // reason, we don't include the port when we sign the message. See {@link SdkHttpRequest#port()}.
